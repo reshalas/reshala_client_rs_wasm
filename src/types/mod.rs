@@ -6,6 +6,7 @@ pub mod slots_component;
 pub mod task;
 pub mod transaction;
 pub mod user;
+pub mod subject;
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Subjects {
