@@ -3,7 +3,7 @@ use super::{Slot, SlotsComponent, Subjects};
 impl SlotsComponent {
 
     pub fn slots(&self) -> Vec<Slot> {
-        self.slots.clone().unwrap()
+        self.slots.clone()
     }
 
     pub fn slot(&self, subject: Subjects) -> Option<Slot> {

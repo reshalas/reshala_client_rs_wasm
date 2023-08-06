@@ -1,6 +1,6 @@
-use super::{LocationData, SlotsComponent, Subjects, Task, TelegramData, Transaction, User};
+use super::*;
 use crate::{
-    dto::{EmailDTO, PhoneDTO, SlotDTO, TaskDTO, UserDTO},
+    dto::{EmailDTO, PhoneDTO, SingDto, SlotDTO, TaskDTO, UserDTO},
     DOMEN,
 };
 use reqwest::StatusCode;
@@ -22,50 +22,57 @@ impl User {
         Err(responce.text().await.unwrap())
     }
 
-    async fn refresh(&mut self) {
-        let new_data = User::get_by_telegram_id(self.telegram_id()).await.unwrap();
-        *self = new_data;
+    fn refresh(&mut self) {
+        let new_data = User::get(SingDto {
+            username: self.username(),
+            password: self.password(),
+        })
+        .unwrap();
+        *self = new_data.unwrap();
     }
 
-    pub async fn get_by_telegram_id(id: u64) -> Option<User> {
-        let client = reqwest::Client::new();
-        let request = client
-            .get(DOMEN.to_string() + "/users/from_telegramm/" + id.to_string().as_str())
-            .build()
+    pub fn get(sing_data: SingDto) -> Result<Option<User>, String> {
+        let client = reqwest::blocking::Client::new();
+        let responce = client
+            .get(format!(
+                "{}/users/user?username={}&password={}",
+                DOMEN, sing_data.username, sing_data.password
+            ))
+            .send()
             .unwrap();
-        let responce = client.execute(request).await.unwrap();
-        if responce.status() == StatusCode::OK {
-            return Some(responce.json().await.unwrap());
+        match responce.status() {
+            StatusCode::OK => Ok(Some(responce.json().unwrap())),
+            StatusCode::NOT_FOUND => Ok(None),
+            _ => Err(responce.text().unwrap()),
         }
-        None
     }
 
-    pub async fn add_slot(&mut self, dto: SlotDTO) {
-        let url = format!(
-            "{}/users/{}/slots/activate",
-            DOMEN.to_string(),
-            self.get_uuid()
-        );
-        let client = reqwest::Client::new();
+    pub fn add_slot(&mut self, dto: SlotDTO) -> Result<(), String> {
+        let url = format!("{}/users/slots/activate", DOMEN.to_string());
+        let client = reqwest::blocking::Client::new();
         let request = client.post(url).json(&dto).build().unwrap();
-        client.execute(request).await.unwrap();
-        self.refresh().await;
+        let responce = client.execute(request).unwrap();
+        match responce.status() {
+            StatusCode::OK => {
+                self.refresh();
+                Ok(())
+            }
+            _ => Err(responce.text().unwrap()),
+        }
     }
 
-    pub async fn remove_slot(&mut self, subject: Subjects) -> Result<(), ()> {
-        let url = format!(
-            "{}/users/{}/slots/deactivate/{:?}",
-            DOMEN.to_string(),
-            self.get_uuid(),
-            subject
-        );
-        let client = reqwest::Client::new();
+    pub fn remove_slot(&mut self, subject: Subjects) -> Result<(), String> {
+        let url = format!("{}/users/slots/deactivate/{:?}", DOMEN.to_string(), subject);
+        let client = reqwest::blocking::Client::new();
         let request = client.delete(url).build().unwrap();
-        let result = client.execute(request).await.unwrap();
-        self.refresh().await;
-        match result.status() {
-            StatusCode::OK => Ok(()),
-            _ => Err(()),
+        let responce = client.execute(request).unwrap();
+        self.refresh();
+        match responce.status() {
+            StatusCode::OK => {
+                self.refresh();
+                Ok(())
+            }
+            _ => Err(responce.text().unwrap()),
         }
     }
 
@@ -73,35 +80,31 @@ impl User {
         self.location_data.clone()
     }
 
-    pub fn telegram_info(&self) -> TelegramData {
-        self.telegram_data.clone()
+    pub fn username(&self) -> String {
+        self.username.clone()
     }
 
-    pub fn get_uuid(&self) -> String {
-        self.id.clone()
+    pub fn password(&self) -> String {
+        self.password.clone()
     }
 
-    pub fn name(&self) -> &str {
-        self.name.as_ref()
+    pub fn first_name(&self) -> &str {
+        self.frirst_name.as_ref()
+    }
+
+    pub fn last_name(&self) -> &str {
+        self.frirst_name.as_ref()
     }
 
     pub fn class(&self) -> i16 {
         self.class
     }
 
-    pub fn telegram_id(&self) -> u64 {
-        self.telegram_data.telegram_id
-    }
-
-    pub fn telegram_chat_id(&self) -> i64 {
-        self.telegram_data.chat_id
-    }
-
     pub fn school(&self) -> i32 {
         self.school
     }
 
-    pub fn email(&self) -> Option<String> {
+    pub fn email(&self) -> String {
         self.email.clone()
     }
 
@@ -113,82 +116,92 @@ impl User {
         &mut self.slots_component
     }
 
-    //Сеттеры
-    pub async fn change_email(&mut self, email: Option<String>) {
-        let url = format!(
-            "{}/users/{}/change/email",
-            DOMEN.to_string(),
-            self.get_uuid()
-        );
-        let client = reqwest::Client::new();
-        let request = client.post(url).json(&EmailDTO { email }).build().unwrap();
-        client.execute(request).await.unwrap();
-        self.refresh().await;
+    pub fn tasks_component(&self) -> &TasksComponent {
+        &self.tasks_component
     }
 
-    pub async fn change_phone_number(&mut self, phone: Option<String>) {
+    //Сеттеры
+    pub fn change_email(&mut self, email: String) -> Result<(), String> {
+        let url = format!("{}/users/change/email/{}", DOMEN.to_string(), email);
+        let client = reqwest::blocking::Client::new();
+        let request = client.post(url).json(&EmailDTO { email }).build().unwrap();
+        let responce = client.execute(request).unwrap();
+        match responce.status() {
+            StatusCode::OK => {
+                self.refresh();
+                Ok(())
+            }
+            _ => Err(responce.text().unwrap()),
+        }
+    }
+
+    pub fn change_phone_number(&mut self, phone: Option<String>) -> Result<(), String> {
         let url = format!(
-            "{}/users/{}/change/phone",
+            "{}/users/change/phone/{}",
             DOMEN.to_string(),
-            self.get_uuid()
+            match phone.clone() {
+                Some(phone) => phone,
+                None => "".into(),
+            }
         );
-        let client = reqwest::Client::new();
+        let client = reqwest::blocking::Client::new();
         let request = client.post(url).json(&PhoneDTO { phone }).build().unwrap();
-        client.execute(request).await.unwrap();
-        self.refresh().await;
+        let responce = client.execute(request).unwrap();
+        match responce.status() {
+            StatusCode::OK => {
+                self.refresh();
+                Ok(())
+            }
+            _ => Err(responce.text().unwrap()),
+        }
     }
 
     //Работа с тасками
-    pub async fn publish_task(&self, dto: TaskDTO) -> Task {
-        let url = format!(
-            "{}/users/{}/publish_task",
-            DOMEN.to_string(),
-            self.get_uuid()
-        );
-        let client = reqwest::Client::new();
+    pub fn publish_task(&mut self, dto: TaskDTO) -> Result<Task, String> {
+        let url = format!("{}/users/publish_task", DOMEN.to_string(),);
+        let client = reqwest::blocking::Client::new();
         let request = client.post(url).json(&dto).build().unwrap();
-        let responce = client.execute(request).await.unwrap();
-        responce.json().await.unwrap()
+        let responce = client.execute(request).unwrap();
+        match responce.status() {
+            StatusCode::OK => {
+                self.refresh();
+                responce.json().unwrap()
+            }
+            _ => Err(responce.text().unwrap()),
+        }
     }
 
-    pub async fn accept_task(&mut self, task: Task) -> Result<Transaction, String> {
-        let url = format!(
-            "{}/users/{}/accept_task/{}",
-            DOMEN.to_string(),
-            self.get_uuid(),
-            task.get_uuid()
-        );
-        let client = reqwest::Client::new();
+    pub fn accept_task(&mut self, task: Task) -> Result<Transaction, String> {
+        let url = format!("{}/users/accept_task/{}", DOMEN.to_string(), task.uuid());
+        let client = reqwest::blocking::Client::new();
         let request = client.post(url).build().unwrap();
-        let responce = client.execute(request).await.unwrap();
-        let result = responce.json().await.unwrap();
-        self.refresh().await;
-        result
-    }
-
-    pub async fn get_my_tasks(&self) -> Vec<Task> {
-        let url = format!("{}/users/{}/tasks", DOMEN.to_string(), self.get_uuid());
-        let client = reqwest::Client::new();
-        let request = client.get(url).build().unwrap();
-        let responce = client.execute(request).await.unwrap();
-        responce.json().await.unwrap()
+        let responce = client.execute(request).unwrap();
+        match responce.status() {
+            StatusCode::OK => {
+                let result = responce.json().unwrap();
+                self.refresh();
+                result
+            }
+            _ => Err(responce.text().unwrap()),
+        }
     }
 
     //рейтинг
-    pub async fn rate(&mut self, mark: u8) {
+    pub fn rate(&mut self, mark: u8) -> Result<(), String> {
         if mark > 5 {
             panic!("Wrong mark")
         }
-        let url = format!(
-            "{}/users/{}/rate/{}",
-            DOMEN.to_string(),
-            self.get_uuid(),
-            mark
-        );
-        let client = reqwest::Client::new();
+        let url = format!("{}/users/rate/{}", DOMEN.to_string(), mark);
+        let client = reqwest::blocking::Client::new();
         let request = client.post(url).build().unwrap();
-        client.execute(request).await.unwrap();
-        self.refresh().await;
+        let responce = client.execute(request).unwrap();
+        match responce.status() {
+            StatusCode::OK => {
+                self.refresh();
+                Ok(())
+            }
+            _ => Err(responce.text().unwrap()),
+        }
     }
 
     pub fn raiting(&self) -> f64 {

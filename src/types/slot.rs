@@ -5,7 +5,7 @@ use super::Subjects;
 use super::User;
 
 impl Slot {
-    pub fn get_uuid(&self) -> String {
+    pub fn uuid(&self) -> String {
         self.id.clone()
     }
 
@@ -16,7 +16,7 @@ impl Slot {
     pub async fn update_limit(&mut self, limit: Option<i32>) {
         let client = reqwest::Client::new();
         let request = client
-            .post(DOMEN.to_string() + "/slots/" + self.get_uuid().as_str() + "/update_limit")
+            .post(DOMEN.to_string() + "/slots/" + self.uuid().as_str() + "/update_limit")
             .json(&SlotLimitDTO{limit})
             .build()
             .unwrap();
@@ -27,14 +27,14 @@ impl Slot {
         self.subject.clone()
     }
 
-    pub fn owner_id(&self) -> String {
-        self.owner_id.clone()
+    pub fn owner_username(&self) -> String {
+        self.owner_username.clone()
     }
 
-    pub async fn get_owner(&self) -> User {
+    pub async fn owner(&self) -> User {
         let client = reqwest::Client::new();
         let request = client
-            .get(DOMEN.to_string() + "/slots/" + self.get_uuid().as_str() + "/owner")
+            .get(DOMEN.to_string() + "/slots/" + self.uuid().as_str() + "/owner")
             .build()
             .unwrap();
         let responce = client.execute(request).await.unwrap();

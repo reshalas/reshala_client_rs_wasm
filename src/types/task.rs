@@ -1,12 +1,12 @@
 use super::{Subjects, Task};
 
 impl Task {
-    pub fn get_uuid(&self) -> String {
+    pub fn uuid(&self) -> String {
         self.id.clone()
     }
 
-    pub fn owner_id(&self) -> String {
-        self.owner_id.clone()
+    pub fn owner_username(&self) -> String {
+        self.owner_username.clone()
     }
 
     pub fn task(&self) -> String {

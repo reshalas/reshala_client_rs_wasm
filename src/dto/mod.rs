@@ -1,16 +1,18 @@
 use chrono::NaiveDateTime;
-use serde::{Deserialize, Serialize};
-use crate::types::{LocationData, Subjects, TelegramData};
+use serde::{Serialize, Deserialize};
+
+use crate::types::{LocationData, Subjects};
 
 #[derive(Serialize, Deserialize)]
 pub struct UserDTO {
-    pub name: String,
+    pub username: String,
+    pub password: String,
+    pub first_name: String,
+    pub last_name: String,
     pub class: i16,
     pub school: i32,
     pub email: Option<String>,
     pub phone_number: Option<String>,
-
-    pub telegram_data: TelegramData,
     pub location_data: LocationData,
 }
 
@@ -22,23 +24,29 @@ pub struct TaskDTO {
     pub target_finishing_time: NaiveDateTime,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 pub struct SlotDTO {
     pub subject: Subjects,
     pub limit: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct SingDto {
+    pub username: String,
+    pub password: String
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SlotLimitDTO {
+    pub limit: Option<i32>,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct EmailDTO {
-    pub email: Option<String>,
+    pub email: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct PhoneDTO {
     pub phone: Option<String>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct SlotLimitDTO{
-    pub limit: Option<i32>
 }

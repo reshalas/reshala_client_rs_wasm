@@ -1,12 +1,12 @@
-use chrono::{NaiveDateTime, NaiveTime, NaiveDate};
+use chrono::{NaiveDateTime, NaiveDate, NaiveTime};
 use serde::{Deserialize, Serialize};
 
 pub mod slot;
 pub mod slots_component;
+pub mod tasks_component;
 pub mod task;
 pub mod transaction;
 pub mod user;
-pub mod subject;
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Subjects {
@@ -27,23 +27,18 @@ pub enum Subjects {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
-    id: String,
-    name: String,
+    username: String,
+    password: String,
+    frirst_name: String,
+    last_name: String,
     class: i16,
     school: i32,
-    email: Option<String>,
+    email: String,
     phone_number: Option<String>,
     slots_component: SlotsComponent,
     raiting: Vec<i16>,
-
-    telegram_data: TelegramData,
+    tasks_component: TasksComponent,
     location_data: LocationData,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TelegramData {
-    pub telegram_id: u64,
-    pub chat_id: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -55,15 +50,21 @@ pub struct LocationData {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct SlotsComponent{
-    slots: Option<Vec<Slot>>,
-    owner_uuid: String
+pub struct SlotsComponent {
+    slots: Vec<Slot>,
+    owner_username: String
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct TasksComponent {
+    tasks: Vec<Task>,
+    owner_username: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Slot {
     id: String,
-    owner_id: String,
+    owner_username: String,
     subject: Subjects,
     limit: Option<i32>,
     pending_transactions: Option<Vec<Transaction>>,
@@ -73,7 +74,7 @@ pub struct Slot {
 pub struct Transaction {
     id: String,
     sender_slot: String,
-    recipient: String,
+    recipient_username: String,
     task: String,
     price: f64,
     passed: bool,
@@ -86,7 +87,7 @@ pub struct Transaction {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Task {
     id: String,
-    owner_id: String,
+    owner_username: String,
     task: String,
     price: f64,
     subject: Subjects,

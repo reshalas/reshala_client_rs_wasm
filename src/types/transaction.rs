@@ -7,7 +7,7 @@ impl Transaction {
         self.id.clone()
     }
 
-    pub async fn get_sender_slot(&self) -> Slot {
+    pub async fn sender_slot(&self) -> Slot {
         let client = reqwest::Client::new();
         let request = client
             .get(DOMEN.to_string() + "/slots/{}" + self.get_uuid().as_str())
@@ -17,11 +17,11 @@ impl Transaction {
         responce.json().await.unwrap()
     }
 
-    pub async fn get_sender(&self) -> User {
-        self.get_sender_slot().await.get_owner().await
+    pub async fn sender(&self) -> User {
+        self.sender_slot().await.owner().await
     }
 
-    pub async fn get_recipient(&self) -> User {
+    pub async fn recipient(&self) -> User {
         let client = reqwest::Client::new();
         let request = client
             .get(DOMEN.to_string() + "/users/" + self.get_uuid().as_str())
@@ -31,12 +31,8 @@ impl Transaction {
         responce.json().await.unwrap()
     }
 
-    pub fn sender_slot(&self) -> String {
-        self.recipient.clone()
-    }
-
-    pub fn recipient_uuid(&self) -> String {
-        self.recipient.clone()
+    pub fn recipient_username(&self) -> String {
+        self.recipient_username.clone()
     }
 
     pub fn price(&self) -> f64 {
