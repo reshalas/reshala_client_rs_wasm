@@ -1,25 +1,47 @@
 use super::*;
 use crate::{
     dto::{EmailDTO, PhoneDTO, SingDto, SlotDTO, TaskDTO, UserDTO},
-    DOMEN,
+    DOMEN, PASSWORD_HEADER, USERNAME_HEADER,
 };
-use reqwest::StatusCode;
+use reqwest::{
+    blocking::Client,
+    header::{HeaderMap, HeaderValue},
+    StatusCode,
+};
 
 impl User {
-    pub async fn register(user: UserDTO) -> Result<User, String> {
-        let client = reqwest::Client::new();
+    fn build_headers(&self) -> HeaderMap {
+        User::build_headers_from_dto(SingDto {
+            username: self.username(),
+            password: self.password(),
+        })
+    }
+
+    fn build_headers_from_dto(dto: SingDto) -> HeaderMap {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            USERNAME_HEADER,
+            HeaderValue::from_str(dto.username.as_str()).unwrap(),
+        );
+        headers.insert(
+            PASSWORD_HEADER,
+            HeaderValue::from_str(dto.password.as_str()).unwrap(),
+        );
+        headers
+    }
+
+    pub fn register(user: UserDTO) -> Result<User, String> {
+        let client = Client::new();
         let request = client
             .post(DOMEN.to_string() + "/users/register")
             .json(&user)
             .build()
             .unwrap();
-        let responce = client.execute(request).await.unwrap();
+        let responce = client.execute(request).unwrap();
         if responce.status() == StatusCode::OK {
-            return Ok(
-                serde_json::from_str::<User>(responce.text().await.unwrap().as_str()).unwrap(),
-            );
+            return Ok(serde_json::from_str::<User>(responce.text().unwrap().as_str()).unwrap());
         }
-        Err(responce.text().await.unwrap())
+        Err(responce.text().unwrap())
     }
 
     fn refresh(&mut self) {
@@ -32,12 +54,13 @@ impl User {
     }
 
     pub fn get(sing_data: SingDto) -> Result<Option<User>, String> {
-        let client = reqwest::blocking::Client::new();
+        let client = Client::new();
         let responce = client
             .get(format!(
                 "{}/users/user?username={}&password={}",
                 DOMEN, sing_data.username, sing_data.password
             ))
+            .headers(User::build_headers_from_dto(sing_data))
             .send()
             .unwrap();
         match responce.status() {
@@ -49,8 +72,13 @@ impl User {
 
     pub fn add_slot(&mut self, dto: SlotDTO) -> Result<(), String> {
         let url = format!("{}/users/slots/activate", DOMEN.to_string());
-        let client = reqwest::blocking::Client::new();
-        let request = client.post(url).json(&dto).build().unwrap();
+        let client = Client::new();
+        let request = client
+            .post(url)
+            .json(&dto)
+            .headers(self.build_headers())
+            .build()
+            .unwrap();
         let responce = client.execute(request).unwrap();
         match responce.status() {
             StatusCode::OK => {
@@ -63,8 +91,12 @@ impl User {
 
     pub fn remove_slot(&mut self, subject: Subjects) -> Result<(), String> {
         let url = format!("{}/users/slots/deactivate/{:?}", DOMEN.to_string(), subject);
-        let client = reqwest::blocking::Client::new();
-        let request = client.delete(url).build().unwrap();
+        let client = Client::new();
+        let request = client
+            .delete(url)
+            .headers(self.build_headers())
+            .build()
+            .unwrap();
         let responce = client.execute(request).unwrap();
         self.refresh();
         match responce.status() {
@@ -123,8 +155,13 @@ impl User {
     //Сеттеры
     pub fn change_email(&mut self, email: String) -> Result<(), String> {
         let url = format!("{}/users/change/email/{}", DOMEN.to_string(), email);
-        let client = reqwest::blocking::Client::new();
-        let request = client.post(url).json(&EmailDTO { email }).build().unwrap();
+        let client = Client::new();
+        let request = client
+            .post(url)
+            .json(&EmailDTO { email })
+            .headers(self.build_headers())
+            .build()
+            .unwrap();
         let responce = client.execute(request).unwrap();
         match responce.status() {
             StatusCode::OK => {
@@ -144,8 +181,13 @@ impl User {
                 None => "".into(),
             }
         );
-        let client = reqwest::blocking::Client::new();
-        let request = client.post(url).json(&PhoneDTO { phone }).build().unwrap();
+        let client = Client::new();
+        let request = client
+            .post(url)
+            .json(&PhoneDTO { phone })
+            .headers(self.build_headers())
+            .build()
+            .unwrap();
         let responce = client.execute(request).unwrap();
         match responce.status() {
             StatusCode::OK => {
@@ -160,7 +202,12 @@ impl User {
     pub fn publish_task(&mut self, dto: TaskDTO) -> Result<Task, String> {
         let url = format!("{}/users/publish_task", DOMEN.to_string(),);
         let client = reqwest::blocking::Client::new();
-        let request = client.post(url).json(&dto).build().unwrap();
+        let request = client
+            .post(url)
+            .headers(self.build_headers())
+            .json(&dto)
+            .build()
+            .unwrap();
         let responce = client.execute(request).unwrap();
         match responce.status() {
             StatusCode::OK => {
@@ -173,8 +220,12 @@ impl User {
 
     pub fn accept_task(&mut self, task: Task) -> Result<Transaction, String> {
         let url = format!("{}/users/accept_task/{}", DOMEN.to_string(), task.uuid());
-        let client = reqwest::blocking::Client::new();
-        let request = client.post(url).build().unwrap();
+        let client = Client::new();
+        let request = client
+            .post(url)
+            .headers(self.build_headers())
+            .build()
+            .unwrap();
         let responce = client.execute(request).unwrap();
         match responce.status() {
             StatusCode::OK => {
@@ -192,7 +243,7 @@ impl User {
             panic!("Wrong mark")
         }
         let url = format!("{}/users/rate/{}", DOMEN.to_string(), mark);
-        let client = reqwest::blocking::Client::new();
+        let client = Client::new();
         let request = client.post(url).build().unwrap();
         let responce = client.execute(request).unwrap();
         match responce.status() {

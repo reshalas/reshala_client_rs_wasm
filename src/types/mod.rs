@@ -1,10 +1,10 @@
-use chrono::{NaiveDateTime, NaiveDate, NaiveTime};
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
 
 pub mod slot;
 pub mod slots_component;
-pub mod tasks_component;
 pub mod task;
+pub mod tasks_component;
 pub mod transaction;
 pub mod user;
 
@@ -43,16 +43,14 @@ pub struct User {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LocationData {
-    pub town: Option<String>,
-    pub country: Option<String>,
-    pub village: Option<String>,
-    pub city: Option<String>,
+    pub country: String,
+    pub city: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SlotsComponent {
     slots: Vec<Slot>,
-    owner_username: String
+    owner_username: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
