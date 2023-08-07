@@ -62,7 +62,7 @@ impl Transaction {
     }
 
     pub fn finish(&mut self) {
-        let client = reqwest::Client::new();
+        let client = Client::new();
         let request = client
             .post(DOMEN.to_string() + "/transactions/" + self.get_uuid().as_str()+"/finish")
             .build()
