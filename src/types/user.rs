@@ -201,7 +201,7 @@ impl User {
     //Работа с тасками
     pub fn publish_task(&mut self, dto: TaskDTO) -> Result<Task, String> {
         let url = format!("{}/users/publish_task", DOMEN.to_string(),);
-        let client = reqwest::blocking::Client::new();
+        let client = Client::new();
         let request = client
             .post(url)
             .headers(self.build_headers())
