@@ -3,8 +3,8 @@ use crate::{
     dto::{EmailDTO, PhoneDTO, SingDto, SlotDTO, TaskDTO, UserDTO},
     DOMEN, PASSWORD_HEADER, USERNAME_HEADER,
 };
-use reqwest_wasm::{
-    blocking::Client,
+use reqwest::{
+    Client,
     header::{HeaderMap, HeaderValue},
     StatusCode,
 };
@@ -30,7 +30,7 @@ impl User {
         headers
     }
 
-    pub fn register(user: UserDTO) -> Result<User, String> {
+    pub async fn register(user: UserDTO) -> Result<User, String> {
         let client = Client::new();
         let request = client
             .post(DOMEN.to_string() + "/users/register")
@@ -44,7 +44,7 @@ impl User {
         Err(responce.text().unwrap())
     }
 
-    fn refresh(&mut self) {
+    async fn refresh(&mut self) {
         let new_data = User::get(SingDto {
             username: self.username(),
             password: self.password(),
@@ -53,7 +53,7 @@ impl User {
         *self = new_data.unwrap();
     }
 
-    pub fn get(sing_data: SingDto) -> Result<Option<User>, String> {
+    pub async fn get(sing_data: SingDto) -> Result<Option<User>, String> {
         let client = Client::new();
         let responce = client
             .get(format!(
@@ -70,7 +70,7 @@ impl User {
         }
     }
 
-    pub fn add_slot(&mut self, dto: SlotDTO) -> Result<(), String> {
+    pub async fn add_slot(&mut self, dto: SlotDTO) -> Result<(), String> {
         let url = format!("{}/users/slots/activate", DOMEN.to_string());
         let client = Client::new();
         let request = client
@@ -89,7 +89,7 @@ impl User {
         }
     }
 
-    pub fn remove_slot(&mut self, subject: Subjects) -> Result<(), String> {
+    pub async fn remove_slot(&mut self, subject: Subjects) -> Result<(), String> {
         let url = format!("{}/users/slots/deactivate/{:?}", DOMEN.to_string(), subject);
         let client = Client::new();
         let request = client
@@ -153,7 +153,7 @@ impl User {
     }
 
     //Сеттеры
-    pub fn change_email(&mut self, email: String) -> Result<(), String> {
+    pub async fn change_email(&mut self, email: String) -> Result<(), String> {
         let url = format!("{}/users/change/email/{}", DOMEN.to_string(), email);
         let client = Client::new();
         let request = client
@@ -172,7 +172,7 @@ impl User {
         }
     }
 
-    pub fn change_phone_number(&mut self, phone: Option<String>) -> Result<(), String> {
+    pub async fn change_phone_number(&mut self, phone: Option<String>) -> Result<(), String> {
         let url = format!(
             "{}/users/change/phone/{}",
             DOMEN.to_string(),
@@ -199,7 +199,7 @@ impl User {
     }
 
     //Работа с тасками
-    pub fn publish_task(&mut self, dto: TaskDTO) -> Result<Task, String> {
+    pub async fn publish_task(&mut self, dto: TaskDTO) -> Result<Task, String> {
         let url = format!("{}/users/publish_task", DOMEN.to_string(),);
         let client = Client::new();
         let request = client
@@ -218,7 +218,7 @@ impl User {
         }
     }
 
-    pub fn accept_task(&mut self, task: Task) -> Result<Transaction, String> {
+    pub async fn accept_task(&mut self, task: Task) -> Result<Transaction, String> {
         let url = format!("{}/users/accept_task/{}", DOMEN.to_string(), task.uuid());
         let client = Client::new();
         let request = client
@@ -238,7 +238,7 @@ impl User {
     }
 
     //рейтинг
-    pub fn rate(&mut self, mark: u8) -> Result<(), String> {
+    pub async fn rate(&mut self, mark: u8) -> Result<(), String> {
         if mark > 5 {
             panic!("Wrong mark")
         }
