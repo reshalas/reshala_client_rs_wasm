@@ -2,33 +2,35 @@ use super::*;
 use crate::DOMEN;
 use chrono::{NaiveDate, NaiveTime};
 
+use reqwest_wasm::blocking::Client;
+
 impl Transaction {
     pub fn get_uuid(&self) -> String {
         self.id.clone()
     }
 
-    pub async fn sender_slot(&self) -> Slot {
-        let client = reqwest::Client::new();
+    pub fn sender_slot(&self) -> Slot {
+        let client = Client::new();
         let request = client
             .get(DOMEN.to_string() + "/slots/{}" + self.get_uuid().as_str())
             .build()
             .unwrap();
-        let responce = client.execute(request).await.unwrap();
-        responce.json().await.unwrap()
+        let responce = client.execute(request).unwrap();
+        responce.json().unwrap()
     }
 
-    pub async fn sender(&self) -> User {
-        self.sender_slot().await.owner().await
+    pub fn sender(&self) -> User {
+        self.sender_slot().owner()
     }
 
-    pub async fn recipient(&self) -> User {
-        let client = reqwest::Client::new();
+    pub fn recipient(&self) -> User {
+        let client = Client::new();
         let request = client
             .get(DOMEN.to_string() + "/users/" + self.get_uuid().as_str())
             .build()
             .unwrap();
-        let responce = client.execute(request).await.unwrap();
-        responce.json().await.unwrap()
+        let responce = client.execute(request).unwrap();
+        responce.json().unwrap()
     }
 
     pub fn recipient_username(&self) -> String {
@@ -59,12 +61,12 @@ impl Transaction {
         self.date_of_ending
     }
 
-    pub async fn finish(&mut self) {
+    pub fn finish(&mut self) {
         let client = reqwest::Client::new();
         let request = client
             .post(DOMEN.to_string() + "/transactions/" + self.get_uuid().as_str()+"/finish")
             .build()
             .unwrap();
-        client.execute(request).await.unwrap();
+        client.execute(request).unwrap();
     }
 }

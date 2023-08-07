@@ -4,6 +4,8 @@ use super::Slot;
 use super::Subjects;
 use super::User;
 
+use reqwest_wasm::blocking::Client;
+
 impl Slot {
     pub fn uuid(&self) -> String {
         self.id.clone()
@@ -14,7 +16,7 @@ impl Slot {
     }
 
     pub fn update_limit(&mut self, limit: Option<i32>) {
-        let client = reqwest::blocking::Client::new();
+        let client = Client::new();
         let request = client
             .post(DOMEN.to_string() + "/slots/" + self.uuid().as_str() + "/update_limit")
             .json(&SlotLimitDTO{limit})
@@ -31,13 +33,13 @@ impl Slot {
         self.owner_username.clone()
     }
 
-    pub async fn owner(&self) -> User {
-        let client = reqwest::Client::new();
+    pub fn owner(&self) -> User {
+        let client = Client::new();
         let request = client
             .get(DOMEN.to_string() + "/slots/" + self.uuid().as_str() + "/owner")
             .build()
             .unwrap();
-        let responce = client.execute(request).await.unwrap();
-        responce.json::<User>().await.unwrap()
+        let responce = client.execute(request).unwrap();
+        responce.json::<User>().unwrap()
     }
 }

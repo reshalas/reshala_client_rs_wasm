@@ -3,7 +3,7 @@ use crate::{
     dto::{EmailDTO, PhoneDTO, SingDto, SlotDTO, TaskDTO, UserDTO},
     DOMEN, PASSWORD_HEADER, USERNAME_HEADER,
 };
-use reqwest::{
+use reqwest_wasm::{
     blocking::Client,
     header::{HeaderMap, HeaderValue},
     StatusCode,
