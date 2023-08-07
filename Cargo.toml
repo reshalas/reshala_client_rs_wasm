@@ -1,5 +1,5 @@
 [package]
-name = "reshala_client"
+name = "reshala_client_wasm"
 version = "0.1.0"
 edition = "2021"
 
